@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>VEO3 Lab</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+body {
+  background:#0b0b12;
+  color:#eaeaf0;
+  font-family:system-ui;
+  padding:16px;
+}
+select, textarea, input, button {
+  width:100%;
+  margin-top:8px;
+  padding:10px;
+  background:#161622;
+  color:white;
+  border:1px solid #333;
+  border-radius:6px;
+}
+button {
+  background:#5b5cff;
+  font-weight:bold;
+}
+.card {
+  background:#141420;
+  padding:12px;
+  border-radius:8px;
+  margin-top:16px;
+}
+.hidden { display:none; }
+</style>
+</head>
+
+<body>
+
+<h2>VEO3 Experimental Lab</h2>
+
+<label>Mode</label>
+<select id="mode" onchange="switchMode()">
+  <option value="txt2vid">Text → Video</option>
+  <option value="img2vid">Image → Video</option>
+  <option value="txt2img">Text → Image</option>
+</select>
+
+<div id="promptBox">
+  <label>Prompt</label>
+  <textarea id="prompt" rows="4"></textarea>
+</div>
+
+<div id="imageBox" class="hidden">
+  <label>Input Image</label>
+  <input type="file" id="image" accept="image/*">
+</div>
+
+<label>Duration (seconds)</label>
+<input type="number" id="duration" value="15">
+
+<label>Quality</label>
+<select id="quality">
+  <option>720p</option>
+  <option selected>1080p</option>
+  <option>4K</option>
+</select>
+
+<label>Aspect Ratio</label>
+<select id="ratio">
+  <option>16:9</option>
+  <option>9:16</option>
+  <option>1:1</option>
+</select>
+
+<label>Style</label>
+<select id="style">
+  <option>Cinematic</option>
+  <option>Anime</option>
+  <option>Documentary</option>
+  <option>Experimental</option>
+</select>
+
+<button onclick="submitJob()">Generate</button>
+
+<div class="card" id="output"></div>
+
+<script>
+function switchMode(){
+  const mode = document.getElementById("mode").value;
+  imageBox.classList.toggle("hidden", mode !== "img2vid");
+}
+
+async function submitJob(){
+  const payload = {
+    mode: mode.value,
+    prompt: prompt.value,
+    duration: duration.value,
+    quality: quality.value,
+    ratio: ratio.value,
+    style: style.value
+  };
+
+  output.innerHTML = "Submitting job…";
+
+  const res = await fetch("https://veo3.arxxcc.workers.dev/generate", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+  output.innerHTML = `<pre>${JSON.stringify(data,null,2)}</pre>`;
+}
+</script>
+
+</body>
+</html>
