@@ -88,8 +88,9 @@ button {
 
 <script>
 function switchMode(){
-  const mode = document.getElementById("mode").value;
-  imageBox.classList.toggle("hidden", mode !== "img2vid");
+  const modeEl = document.getElementById("mode");
+  const imageBox = document.getElementById("imageBox");
+  imageBox.classList.toggle("hidden", modeEl.value !== "img2vid");
 }
 
 async function submitJob(){
@@ -114,6 +115,6 @@ async function submitJob(){
   output.innerHTML = `<pre>${JSON.stringify(data,null,2)}</pre>`;
 }
 </script>
-
+  
 </body>
 </html>
