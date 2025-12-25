@@ -2,15 +2,16 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>VEO3 Lab</title>
+<title>VEO3 Experimental Lab</title>
 <meta name="viewport" content="width=device-width">
 
 <style>
 body{background:#0b0b12;color:#eee;font-family:system-ui;padding:16px}
-textarea,select,button{width:100%;margin-top:10px;padding:10px}
+select,textarea,input,button{width:100%;margin-top:10px;padding:10px;border-radius:6px}
 button{background:#5b5cff;color:white;font-weight:bold}
-video,img{width:100%;margin-top:12px}
-pre{background:#141420;padding:12px}
+pre{background:#141420;padding:12px;margin-top:12px}
+video,img{width:100%;margin-top:12px;border-radius:8px}
+.hidden{display:none}
 </style>
 </head>
 
@@ -18,12 +19,42 @@ pre{background:#141420;padding:12px}
 
 <h3>VEO3 Experimental Lab</h3>
 
-<select id="mode">
+<label>Mode</label>
+<select id="mode" onchange="switchMode()">
   <option value="txt2img">Text → Image</option>
   <option value="txt2vid">Text → Video</option>
+  <option value="img2vid">Image → Video</option>
 </select>
 
-<textarea id="prompt" rows="4" placeholder="Prompt..."></textarea>
+<label>Prompt</label>
+<textarea id="prompt" rows="4"></textarea>
+
+<div id="imageBox" class="hidden">
+  <label>Image URL (for Image → Video)</label>
+  <input id="image_url" placeholder="https://...">
+</div>
+
+<label>Duration (sec)</label>
+<input id="duration" type="number" value="15">
+
+<label>Quality</label>
+<select id="quality">
+  <option>720p</option>
+  <option selected>1080p</option>
+</select>
+
+<label>Aspect Ratio</label>
+<select id="ratio">
+  <option>16:9</option>
+  <option>9:16</option>
+</select>
+
+<label>Style</label>
+<select id="style">
+  <option>Cinematic</option>
+  <option>Anime</option>
+  <option>Documentary</option>
+</select>
 
 <button onclick="generate()">Generate</button>
 
@@ -33,8 +64,74 @@ pre{background:#141420;padding:12px}
 <script>
 const API = "https://veo3.arxxcc.workers.dev";
 
+function switchMode(){
+  imageBox.classList.toggle(
+    "hidden",
+    mode.value !== "img2vid"
+  );
+}
+
 async function generate(){
   log.textContent = "Submitting...";
+  result.innerHTML = "";
+
+  const payload = {
+    mode: mode.value,
+    prompt: prompt.value,
+    duration: duration.value,
+    quality: quality.value,
+    ratio: ratio.value,
+    style: style.value
+  };
+
+  if(mode.value === "img2vid"){
+    payload.image_url = image_url.value;
+  }
+
+  const r = await fetch(API + "/generate", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const { id } = await r.json();
+  poll(id);
+}
+
+async function poll(id){
+  while(true){
+    const r = await fetch(API + "/status?id=" + id);
+    const data = await r.json();
+    log.textContent = data.status;
+
+    if(data.status === "succeeded"){
+      const out = data.output[0];
+      if(out.endsWith(".mp4")){
+        result.innerHTML = `
+          <video src="${out}" controls></video>
+          <a href="${out}" download>Download video</a>
+        `;
+      } else {
+        result.innerHTML = `
+          <img src="${out}">
+          <a href="${out}" download>Download image</a>
+        `;
+      }
+      break;
+    }
+
+    if(data.status === "failed"){
+      log.textContent = "Failed";
+      break;
+    }
+
+    await new Promise(r=>setTimeout(r,3000));
+  }
+}
+</script>
+
+</body>
+</html>  log.textContent = "Submitting...";
   result.innerHTML = "";
 
   const r = await fetch(API + "/generate", {
