@@ -128,26 +128,46 @@ async function poll(id){
     await new Promise(r=>setTimeout(r,3000));
   }
 }
-</script>
+<script>
+const API = "https://veo3.arxxcc.workers.dev";
 
-</body>
-</html>  log.textContent = "Submitting...";
+function switchMode(){
+  document.getElementById("imageBox").classList.toggle(
+    "hidden",
+    document.getElementById("mode").value !== "img2vid"
+  );
+}
+
+async function generate(){
+  const log = document.getElementById("log");
+  const result = document.getElementById("result");
+
+  log.textContent = "Submitting...";
   result.innerHTML = "";
 
-  const r = await fetch(API + "/generate", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      mode: mode.value,
-      prompt: prompt.value
-    })
+  const payload = {
+    mode: document.getElementById("mode").value,
+    prompt: document.getElementById("prompt").value,
+    duration: document.getElementById("duration").value,
+    quality: document.getElementById("quality").value,
+    ratio: document.getElementById("ratio").value,
+    style: document.getElementById("style").value
+  };
+
+  const res = await fetch(API + "/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
   });
 
-  const { id } = await r.json();
-  poll(id);
+  const job = await res.json();
+  poll(job.id);
 }
 
 async function poll(id){
+  const log = document.getElementById("log");
+  const result = document.getElementById("result");
+
   while(true){
     const r = await fetch(API + "/status?id=" + id);
     const data = await r.json();
@@ -155,15 +175,25 @@ async function poll(id){
     log.textContent = data.status;
 
     if(data.status === "succeeded"){
-      const out = data.output[0];
-      if(out.endsWith(".mp4")){
-        result.innerHTML = `
-          <video src="${out}" controls></video>
-          <a href="${out}" download>Download video</a>
-        `;
+      const url = data.output[0];
+
+      if(url.endsWith(".mp4")){
+        const v = document.createElement("video");
+        v.src = url;
+        v.controls = true;
+        result.appendChild(v);
       } else {
-        result.innerHTML = `<img src="${out}">`;
+        const img = document.createElement("img");
+        img.src = url;
+        result.appendChild(img);
       }
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.textContent = "Download";
+      a.download = "";
+      result.appendChild(a);
+
       break;
     }
 
